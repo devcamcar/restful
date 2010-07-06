@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.$(GOARCH)
 
-TARG=restful
+TARG=github.com/devcamcar/restful
 GOFILES=\
 	restful.go\
 
