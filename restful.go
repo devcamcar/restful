@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -36,30 +35,30 @@ type RestClient struct {
 }
 
 func (client *RestClient) SubmitRequest(url, method string, headers, params map[string]string) (*http.Response, os.Error) {
-    var request  *http.Request;
-    var response *http.Response;
-    var body      string;
-    var err       os.Error;
+    var request  *http.Request
+    var response *http.Response
+    var body      string
+    var err       os.Error
 
     if headers == nil {
-        headers = make(map[string]string);
-        headers["Content-Type"] = "text/plain";
+        headers = make(map[string]string)
+        headers["Content-Type"] = "text/plain"
     }
     
-    method = strings.ToUpper(method);
+    method = strings.ToUpper(method)
     
-    rawurl := strings.Join([]string { client.Endpoint, url }, "");
+    rawurl := strings.Join([]string { client.Endpoint, url }, "")
 
     if params != nil {
         if method == "GET" {
-            rawurl += "?" + urlEncode(&params);
+            rawurl += "?" + urlEncode(&params)
         } else if method == "PUT" || method == "POST" {
-            headers["Content-Type"] = "application/x-www-form-urlencoded";
-            body = urlEncode(&params);
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+            body = urlEncode(&params)
         }
     }
 
-    log.Stdout("URL: " + rawurl);
+    log.Stdout("URL: " + rawurl)
     log.Stdout("Body: " + body)
     
      if len(client.UserInfo) > 0 {
@@ -70,7 +69,7 @@ func (client *RestClient) SubmitRequest(url, method string, headers, params map[
     }
     
     if request, err = prepareHttpRequest(rawurl, method, &headers); err != nil {
-        return nil, err;
+        return nil, err
     }
     
     if len(body) > 0 {
@@ -78,44 +77,44 @@ func (client *RestClient) SubmitRequest(url, method string, headers, params map[
         request.Body = closer{bytes.NewBufferString(body)}
     }
     
-    dump, _ := http.DumpRequest(request, true);
-    log.Stdout(string(dump));
+    dump, _ := http.DumpRequest(request, true)
+    log.Stdout(string(dump))
     
     if response, err = client.sendHttpRequest(request); err != nil {
-        return nil, err;
+        return nil, err
     }
 
-    return response, nil;
+    return response, nil
 }
 
 func urlEncode(data *map[string]string) string {
-    args := "";
+    args := ""
 
     for key, value := range *data {
         if len(args) > 0 {
-            args += "&";
+            args += "&"
         }
         
-        args += fmt.Sprintf("%s=%s", key, value);
+        args += fmt.Sprintf("%s=%s", key, value)
     }
     
-    return args; 
+    return args
 }
 
 func prepareHttpRequest(rawurl, method string, headers *map[string]string) (*http.Request, os.Error) {
-    var request  http.Request;
-    var url     *http.URL;
-    var err      os.Error;
+    var request  http.Request
+    var url     *http.URL
+    var err      os.Error
     
     if url, err = http.ParseURL(rawurl); err != nil {
-        return nil, err;
+        return nil, err
     }
     
-    request.Header = *headers;
-    request.Method = method;
-    request.URL = url;
-
-    return &request, nil;
+    request.Header = *headers
+    request.Method = method
+    request.URL = url
+    
+    return &request, nil
 }
 
 func (client *RestClient) sendHttpRequest(req *http.Request) (resp *http.Response, err os.Error) {
