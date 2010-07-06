@@ -1,0 +1,5 @@
+Restful
+
+A simple HTTP REST client library for golang.
+
+Supports SSL and basic authentication.
