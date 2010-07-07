@@ -2,36 +2,36 @@ package restful
 
 import (
     "bytes"
-	"crypto/rand"
-	"crypto/tls"
+    "crypto/rand"
+    "crypto/tls"
     "encoding/base64"
-	"fmt"
-	"http"
-	"io"
-	"log"
-	"net"
-	"os"
-	"strings"
-	"time"
+    "fmt"
+    "http"
+    "io"
+    "log"
+    "net"
+    "os"
+    "strings"
+    "time"
 )
 
 type readCloser struct {
-	io.Reader
-	io.Closer
+    io.Reader
+    io.Closer
 }
 
 type closer struct {
-	io.Reader
+    io.Reader
 }
 
 func (closer) Close() os.Error { return nil }
 
 
 type RestClient struct {
-	Endpoint    string
-	Proxy       string
-	UserInfo    string
-	// TODO(devcamcar): UserAgent string
+    Endpoint    string
+    Proxy       string
+    UserInfo    string
+    // TODO(devcamcar): UserAgent string
 }
 
 func (client *RestClient) SubmitRequest(url, method string, headers, params map[string]string) (*http.Response, os.Error) {
@@ -124,48 +124,48 @@ func (client *RestClient) sendHttpRequest(req *http.Request) (resp *http.Respons
         return nil, err
     }
     
-	err = conn.Write(req)
-	
-	if protoerr, ok := err.(*http.ProtocolError); ok && protoerr == http.ErrPersistEOF {
-		// the connection has been closed in an HTTP keepalive sense
-		conn, _ = makeConnection(req.URL, client.Proxy)
-		err = conn.Write(req)
-	} else if err == io.ErrUnexpectedEOF {
-		// the underlying connection has been closed "gracefully"
-		conn, _ = makeConnection(req.URL, client.Proxy)
-		err = conn.Write(req)
-	}
+    err = conn.Write(req)
 
-	if err != nil {
-	    return nil, err
-	}
+    if protoerr, ok := err.(*http.ProtocolError); ok && protoerr == http.ErrPersistEOF {
+        // the connection has been closed in an HTTP keepalive sense
+        conn, _ = makeConnection(req.URL, client.Proxy)
+        err = conn.Write(req)
+    } else if err == io.ErrUnexpectedEOF {
+        // the underlying connection has been closed "gracefully"
+        conn, _ = makeConnection(req.URL, client.Proxy)
+        err = conn.Write(req)
+    }
 
-	resp, err = conn.Read()
-
-	if protoerr, ok := err.(*http.ProtocolError); ok && protoerr == http.ErrPersistEOF {
-		// the remote requested that this be the last request serviced
-		conn, _ = makeConnection(req.URL, client.Proxy)
-	} else if err != nil {
+    if err != nil {
         return nil, err
-	}
-	
-	log.Stdout(resp.Proto + " " + resp.Status);
+    }
 
-	if len(resp.Header) > 0 {
-		for key, val := range resp.Header {
-			fmt.Println("\x1b[1m" + key + "\x1b[22m: " + val)
-		}
-		fmt.Println()
-	}
-		
-	return 
+    resp, err = conn.Read()
+
+    if protoerr, ok := err.(*http.ProtocolError); ok && protoerr == http.ErrPersistEOF {
+        // the remote requested that this be the last request serviced
+        conn, _ = makeConnection(req.URL, client.Proxy)
+    } else if err != nil {
+        return nil, err
+    }
+
+    log.Stdout(resp.Proto + " " + resp.Status);
+
+    if len(resp.Header) > 0 {
+        for key, val := range resp.Header {
+            fmt.Println("\x1b[1m" + key + "\x1b[22m: " + val)
+        }
+        fmt.Println()
+    }
+
+    return 
 }
 
 func makeConnection(url *http.URL, proxy string) (*http.ClientConn, os.Error) {
-	var tcp     net.Conn
-	var useSSL  bool
+    var tcp     net.Conn
+    var useSSL  bool
     var conn    *http.ClientConn
-	var err     os.Error
+    var err     os.Error
 
     // Determine host and port.
     addr := url.Host;
@@ -179,32 +179,32 @@ func makeConnection(url *http.URL, proxy string) (*http.ClientConn, os.Error) {
         }
     }
     
-	if len(proxy) > 0 {
-		proxy_url, _ := http.ParseURL(proxy)
-		tcp, err = net.Dial("tcp", "", proxy_url.Host)
-	} else {
-		tcp, err = net.Dial("tcp", "", addr)
-	}
+    if len(proxy) > 0 {
+        proxy_url, _ := http.ParseURL(proxy)
+        tcp, err = net.Dial("tcp", "", proxy_url.Host)
+    } else {
+        tcp, err = net.Dial("tcp", "", addr)
+    }
 
-	if err != nil {
-		return nil, err
-	}
+    if err != nil {
+        return nil, err
+    }
 
-	if useSSL {
-		cf := &tls.Config{Rand: rand.Reader, Time: time.Nanoseconds}
-		ssl := tls.Client(tcp, cf)
-		conn = http.NewClientConn(ssl, nil)
-		
-		if len(proxy) > 0 {
-			tcp.Write([]byte("CONNECT " + addr + " HTTP/1.0\r\n\r\n"))
-			b := make([]byte, 1024)
-			tcp.Read(b)
-		}
-	} else {		
-		conn = http.NewClientConn(tcp, nil)
-	}
-	
-	return conn, nil
+    if useSSL {
+        cf := &tls.Config{Rand: rand.Reader, Time: time.Nanoseconds}
+        ssl := tls.Client(tcp, cf)
+        conn = http.NewClientConn(ssl, nil)
+
+        if len(proxy) > 0 {
+            tcp.Write([]byte("CONNECT " + addr + " HTTP/1.0\r\n\r\n"))
+            b := make([]byte, 1024)
+            tcp.Read(b)
+        }
+    } else {
+        conn = http.NewClientConn(tcp, nil)
+    }
+
+    return conn, nil
 }
 
 // Given a string of the form "host", "host:port", or "[ipv6::address]:port",
